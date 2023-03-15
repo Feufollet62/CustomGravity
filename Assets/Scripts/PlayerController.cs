@@ -34,7 +34,8 @@ public class PlayerController : MonoBehaviour
     {
         UpdateState();
         
-        float maxSpeedChange = maxAcceleration * Time.deltaTime;
+        float acceleration = _grounded ? maxAcceleration : maxAirAcceleration;
+        float maxSpeedChange = acceleration * Time.deltaTime;
         
         _velocity.x = Mathf.MoveTowards(_velocity.x, _desiredVelocity.x, maxSpeedChange);
         _velocity.z = Mathf.MoveTowards(_velocity.z, _desiredVelocity.z, maxSpeedChange);
