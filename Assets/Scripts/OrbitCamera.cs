@@ -1,3 +1,4 @@
+using Unity.Mathematics;
 using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
@@ -14,6 +15,9 @@ public class OrbitCamera : MonoBehaviour
     private Vector2 _orbitAngles = new Vector2(45f, 0f);
     private Vector3 _focusPoint;
     
+    private Quaternion _orbitRotation;
+    private Quaternion _gravityAlignment = Quaternion.identity;
+    
     void OnValidate()
     {
         if (maxVerticalAngle < minVerticalAngle) maxVerticalAngle = minVerticalAngle;
@@ -22,20 +26,22 @@ public class OrbitCamera : MonoBehaviour
     private void Awake ()
     {
         _focusPoint = focus.position;
-        transform.localRotation = Quaternion.Euler(_orbitAngles);
+        transform.localRotation = _orbitRotation = Quaternion.Euler(_orbitAngles);
     }
     
     private void LateUpdate()
     {
+        _gravityAlignment = 
+            Quaternion.FromToRotation(_gravityAlignment * Vector3.up, -Physics.gravity.normalized) * _gravityAlignment;
         UpdateFocusPoint();
-        Quaternion lookRotation = Quaternion.Euler(_orbitAngles);
+        
         if (ManualRotation())
         {
             ConstrainAngles();
-            lookRotation = Quaternion.Euler(_orbitAngles);
+            _orbitRotation = Quaternion.Euler(_orbitAngles);
         }
-        else lookRotation = transform.localRotation;
-
+        
+        Quaternion lookRotation = _gravityAlignment * _orbitRotation;
         Vector3 lookDirection = transform.forward;
         Vector3 lookPosition = _focusPoint - lookDirection * distance;
         transform.SetPositionAndRotation(lookPosition, lookRotation);
