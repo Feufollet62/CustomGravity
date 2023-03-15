@@ -16,7 +16,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField, Range(0, 5)] int maxAirJumps = 0;
     
     private Vector3 _velocity, _desiredVelocity;
-    private Vector3 upAxis;
+    private Vector3 _upAxis, _rightAxis, _forwardAxis;
     
     private float _minGroundDotProduct, _minStairsDotProduct;
     private Vector3 _contactNormal, _steepNormal;
@@ -51,22 +51,22 @@ public class PlayerController : MonoBehaviour
         
         if (playerInputSpace)
         {
-            Vector3 forward = playerInputSpace.forward;
-            forward.y = 0f;
-            forward.Normalize();
-            Vector3 right = playerInputSpace.right;
-            right.y = 0f;
-            right.Normalize();
-            _desiredVelocity = (forward * playerInput.y + right * playerInput.x) * maxSpeed;
+            _rightAxis = ProjectDirectionOnPlane(playerInputSpace.right, _upAxis);
+            _forwardAxis = ProjectDirectionOnPlane(playerInputSpace.forward, _upAxis);
         }
-        else _desiredVelocity = new Vector3(playerInput.x, 0f, playerInput.y) * maxSpeed;
+        else
+        {
+            _rightAxis = ProjectDirectionOnPlane(Vector3.right, _upAxis);
+            _forwardAxis = ProjectDirectionOnPlane(Vector3.forward, _upAxis);
+        }
+        _desiredVelocity = new Vector3(playerInput.x, 0f, playerInput.y) * maxSpeed;
         
         _desiredJump |= Input.GetButtonDown("Jump");
     }
 
     private void FixedUpdate()
     {
-        upAxis = -Physics.gravity.normalized;
+        _upAxis = -Physics.gravity.normalized;
         
         UpdateState();
         AdjustVelocity();
@@ -104,7 +104,7 @@ public class PlayerController : MonoBehaviour
             if (_stepsSinceLastJump > 1) _jumpPhase = 0;
             if (_groundContactCount > 1) _contactNormal.Normalize();
         }
-        else _contactNormal = upAxis;
+        else _contactNormal = _upAxis;
     }
     
     private void EvaluateCollision(Collision col)
@@ -113,7 +113,7 @@ public class PlayerController : MonoBehaviour
         for (int i = 0; i < col.contactCount; i++)
         {
             Vector3 normal = col.GetContact(i).normal;
-            float upDot = Vector3.Dot(upAxis, normal);
+            float upDot = Vector3.Dot(_upAxis, normal);
             
             if (upDot >= minDot)
             {
@@ -148,7 +148,7 @@ public class PlayerController : MonoBehaviour
         _jumpPhase++;
         
         float jumpSpeed = Mathf.Sqrt(2f * Physics.gravity.magnitude * jumpHeight);
-        jumpDirection = (jumpDirection + upAxis).normalized;
+        jumpDirection = (jumpDirection + _upAxis).normalized;
         float alignedSpeed = Vector3.Dot(_velocity, jumpDirection);
         if (alignedSpeed > 0f) jumpSpeed = Mathf.Max(jumpSpeed - alignedSpeed, 0f);
 
@@ -157,8 +157,8 @@ public class PlayerController : MonoBehaviour
     
     private void AdjustVelocity()
     {
-        Vector3 xAxis = ProjectOnContactPlane(Vector3.right).normalized;
-        Vector3 zAxis = ProjectOnContactPlane(Vector3.forward).normalized;
+        Vector3 xAxis = ProjectDirectionOnPlane(_rightAxis, _contactNormal);
+        Vector3 zAxis = ProjectDirectionOnPlane(_forwardAxis, _contactNormal);
         
         float currentX = Vector3.Dot(_velocity, xAxis);
         float currentZ = Vector3.Dot(_velocity, zAxis);
@@ -172,9 +172,9 @@ public class PlayerController : MonoBehaviour
         _velocity += xAxis * (newX - currentX) + zAxis * (newZ - currentZ);
     }
     
-    private Vector3 ProjectOnContactPlane(Vector3 vector)
+    Vector3 ProjectDirectionOnPlane(Vector3 direction, Vector3 normal)
     {
-        return vector - _contactNormal * Vector3.Dot(vector, _contactNormal);
+        return (direction - normal * Vector3.Dot(direction, normal)).normalized;
     }
 
     private bool SnapToGround()
@@ -184,9 +184,9 @@ public class PlayerController : MonoBehaviour
         float speed = _velocity.magnitude;
         if (speed > maxSnapSpeed) return false;
         
-        if(!Physics.Raycast(_rb.position, -upAxis, out RaycastHit hit, maxSnapDistance, snapMask)) return false;
+        if(!Physics.Raycast(_rb.position, -_upAxis, out RaycastHit hit, maxSnapDistance, snapMask)) return false;
         
-        float upDot = Vector3.Dot(upAxis, hit.normal);
+        float upDot = Vector3.Dot(_upAxis, hit.normal);
         if(upDot < GetMinDot(hit.collider.gameObject.layer)) return false;
         
         _groundContactCount = 1;
@@ -207,7 +207,7 @@ public class PlayerController : MonoBehaviour
         if (_steepContactCount > 1)
         {
             _steepNormal.Normalize();
-            float upDot = Vector3.Dot(upAxis, _steepNormal);
+            float upDot = Vector3.Dot(_upAxis, _steepNormal);
             if (upDot >= _minGroundDotProduct)
             {
                 _groundContactCount = 1;
