@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    [SerializeField] private Transform playerInputSpace = default;
+    
     [SerializeField, Range(0f, 20f)] float maxSpeed = 10f;
     [SerializeField, Range(0f, 50f)] float maxAcceleration = 10f, maxAirAcceleration = 1f;
     [SerializeField, Range(0f, 90f)] float maxGroundAngle = 40f, maxStairsAngle = 60f;
@@ -46,8 +48,18 @@ public class PlayerController : MonoBehaviour
         playerInput.y = Input.GetAxis("Vertical");
         playerInput = Vector2.ClampMagnitude(playerInput, 1f);
         
-        _desiredVelocity = new Vector3(playerInput.x, 0f, playerInput.y) * maxSpeed;
-
+        if (playerInputSpace)
+        {
+            Vector3 forward = playerInputSpace.forward;
+            forward.y = 0f;
+            forward.Normalize();
+            Vector3 right = playerInputSpace.right;
+            right.y = 0f;
+            right.Normalize();
+            _desiredVelocity = (forward * playerInput.y + right * playerInput.x) * maxSpeed;
+        }
+        else _desiredVelocity = new Vector3(playerInput.x, 0f, playerInput.y) * maxSpeed;
+        
         _desiredJump |= Input.GetButtonDown("Jump");
     }
 

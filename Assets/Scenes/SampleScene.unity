@@ -434,6 +434,9 @@ MonoBehaviour:
   distance: 8
   focusRadius: 1
   focusCentering: 0.5
+  rotationSpeed: 90
+  minVerticalAngle: -30
+  maxVerticalAngle: 60
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -978,6 +981,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49240390768eebf4b96983bae7a96fbf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerInputSpace: {fileID: 330585546}
   maxSpeed: 7
   maxAcceleration: 45
   maxAirAcceleration: 15
