@@ -864,7 +864,7 @@ GameObject:
   - component: {fileID: 585946911}
   - component: {fileID: 585946906}
   - component: {fileID: 585946910}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Player
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -965,6 +965,13 @@ MonoBehaviour:
   maxAcceleration: 45
   maxAirAcceleration: 15
   maxGroundAngle: 40
+  maxStairsAngle: 60
+  snapMask:
+    serializedVersion: 2
+    m_Bits: 307
+  stairsMask:
+    serializedVersion: 2
+    m_Bits: 256
   maxSnapDistance: 1
   maxSnapSpeed: 15
   jumpHeight: 1

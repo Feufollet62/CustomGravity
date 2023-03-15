@@ -4,9 +4,9 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField, Range(0f, 20f)] float maxSpeed = 10f;
     [SerializeField, Range(0f, 50f)] float maxAcceleration = 10f, maxAirAcceleration = 1f;
-    [SerializeField, Range(0f, 90f)] float maxGroundAngle = 40f;
+    [SerializeField, Range(0f, 90f)] float maxGroundAngle = 40f, maxStairsAngle = 60f;
     
-    [SerializeField] LayerMask snapMask = -1;
+    [SerializeField] LayerMask snapMask = -1, stairsMask = -1;
     [SerializeField, Min(0f)] float maxSnapDistance = 1f;
     [SerializeField, Range(0f, 100f)] float maxSnapSpeed = 100f;
     
@@ -15,7 +15,7 @@ public class PlayerController : MonoBehaviour
     
     private Vector3 _velocity, _desiredVelocity;
     
-    private float _minGroundDotProduct;
+    private float _minGroundDotProduct, _minStairsDotProduct;
     private Vector3 _contactNormal;
     private int _stepsSinceLastGrounded, _stepsSinceLastJump;
     private int _groundContactCount;
@@ -96,11 +96,12 @@ public class PlayerController : MonoBehaviour
     
     private void EvaluateCollision(Collision col)
     {
+        float minDot = GetMinDot(col.gameObject.layer);
         for (int i = 0; i < col.contactCount; i++)
         {
             Vector3 normal = col.GetContact(i).normal;
             
-            if (normal.y >= _minGroundDotProduct)
+            if (normal.y >= minDot)
             {
                 _groundContactCount++;
                 _contactNormal += normal;
@@ -154,7 +155,7 @@ public class PlayerController : MonoBehaviour
         
         if(!Physics.Raycast(_rb.position, Vector3.down, out RaycastHit hit, maxSnapDistance, snapMask)) return false;
         
-        if(hit.normal.y < _minGroundDotProduct) return false;
+        if(hit.normal.y < GetMinDot(hit.collider.gameObject.layer)) return false;
         
         _groundContactCount = 1;
         _contactNormal = hit.normal;
@@ -162,6 +163,11 @@ public class PlayerController : MonoBehaviour
         if (dot > 0f) _velocity = (_velocity - hit.normal * dot).normalized * speed;
         
         return true;
+    }
+    
+    private float GetMinDot(int layer)
+    {
+        return (stairsMask & (1 << layer)) == 0 ? _minGroundDotProduct : _minStairsDotProduct;
     }
     
     private void ClearState()
