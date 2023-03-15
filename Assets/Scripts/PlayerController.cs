@@ -39,6 +39,7 @@ public class PlayerController : MonoBehaviour
     private void Awake() 
     {
         _rb = GetComponent<Rigidbody>();
+        _rb.useGravity = false;
         OnValidate();
     }
     
@@ -66,7 +67,7 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        _upAxis = -Physics.gravity.normalized;
+        Vector3 gravity = CustomGravity.GetGravity(_rb.position, out _upAxis);
         
         UpdateState();
         AdjustVelocity();
@@ -74,8 +75,10 @@ public class PlayerController : MonoBehaviour
         if(_desiredJump) 
         {
             _desiredJump = false;
-            Jump();
+            Jump(gravity);
         }
+        
+        _velocity += gravity * Time.deltaTime;
         
         _rb.velocity = _velocity;
 
@@ -128,7 +131,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void Jump()
+    private void Jump(Vector3 gravity)
     {
         Vector3 jumpDirection;
         if (Grounded) jumpDirection = _contactNormal;
@@ -147,7 +150,7 @@ public class PlayerController : MonoBehaviour
         _stepsSinceLastJump = 0;
         _jumpPhase++;
         
-        float jumpSpeed = Mathf.Sqrt(2f * Physics.gravity.magnitude * jumpHeight);
+        float jumpSpeed = Mathf.Sqrt(2f * gravity.magnitude * jumpHeight);
         jumpDirection = (jumpDirection + _upAxis).normalized;
         float alignedSpeed = Vector3.Dot(_velocity, jumpDirection);
         if (alignedSpeed > 0f) jumpSpeed = Mathf.Max(jumpSpeed - alignedSpeed, 0f);
