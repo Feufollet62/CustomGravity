@@ -13,11 +13,14 @@ public class PlayerController : MonoBehaviour
     private float _minGroundDotProduct;
 
     private Vector3 _contactNormal;
-    private bool _desiredJump, _grounded;
+    private int _groundContactCount;
+    private bool _desiredJump;
     private int _jumpPhase;
-    
+
     private Rigidbody _rb;
 
+    private bool Grounded => _groundContactCount > 0;
+    
     private void OnValidate()
     {
         _minGroundDotProduct = Mathf.Cos(maxGroundAngle * Mathf.Deg2Rad);
@@ -54,7 +57,7 @@ public class PlayerController : MonoBehaviour
         
         _rb.velocity = _velocity;
 
-        _grounded = false;
+        ClearState();
     }
     
     private void OnCollisionEnter(Collision col)
@@ -67,10 +70,23 @@ public class PlayerController : MonoBehaviour
         EvaluateCollision(col);
     }
 
+    private void ClearState()
+    {
+        _groundContactCount = 0;
+        _contactNormal = Vector3.zero;
+    }
+    
     private void UpdateState()
     {
         _velocity = _rb.velocity;
-        if (_grounded) _jumpPhase = 0;
+        if (Grounded)
+        {
+            _jumpPhase = 0;
+            if (_groundContactCount > 1)
+            {
+                _contactNormal.Normalize();
+            }
+        }
         else _contactNormal = Vector3.up;
     }
     
@@ -82,15 +98,15 @@ public class PlayerController : MonoBehaviour
             
             if (normal.y >= _minGroundDotProduct)
             {
-                _grounded = true;
-                _contactNormal = normal;
+                _groundContactCount++;
+                _contactNormal += normal;
             }
         }
     }
 
     private void Jump()
     {
-        if(_grounded || _jumpPhase < maxAirJumps)
+        if(Grounded || _jumpPhase < maxAirJumps)
         {
             _jumpPhase++;
             
@@ -110,7 +126,7 @@ public class PlayerController : MonoBehaviour
         float currentX = Vector3.Dot(_velocity, xAxis);
         float currentZ = Vector3.Dot(_velocity, zAxis);
         
-        float acceleration = _grounded ? maxAcceleration : maxAirAcceleration;
+        float acceleration = Grounded ? maxAcceleration : maxAirAcceleration;
         float maxSpeedChange = acceleration * Time.deltaTime;
 
         float newX = Mathf.MoveTowards(currentX, _desiredVelocity.x, maxSpeedChange);
