@@ -10,10 +10,12 @@ public class PlayerController : MonoBehaviour
     [SerializeField, Range(0, 5)] int maxAirJumps = 0;
     
     private Vector3 _velocity, _desiredVelocity;
+    
     private float _minGroundDotProduct;
-
     private Vector3 _contactNormal;
+    private int _stepsSinceLastGrounded;
     private int _groundContactCount;
+    
     private bool _desiredJump;
     private int _jumpPhase;
 
@@ -70,17 +72,14 @@ public class PlayerController : MonoBehaviour
         EvaluateCollision(col);
     }
 
-    private void ClearState()
-    {
-        _groundContactCount = 0;
-        _contactNormal = Vector3.zero;
-    }
-    
     private void UpdateState()
     {
+        _stepsSinceLastGrounded++;
+        
         _velocity = _rb.velocity;
-        if (Grounded)
+        if (Grounded || SnapToGround())
         {
+            _stepsSinceLastGrounded = 0;
             _jumpPhase = 0;
             if (_groundContactCount > 1)
             {
@@ -138,5 +137,34 @@ public class PlayerController : MonoBehaviour
     private Vector3 ProjectOnContactPlane(Vector3 vector)
     {
         return vector - _contactNormal * Vector3.Dot(vector, _contactNormal);
+    }
+
+    private bool SnapToGround()
+    {
+        if(_stepsSinceLastGrounded > 1)
+        {
+            return false;
+        }
+        if(!Physics.Raycast(_rb.position, Vector3.down, out RaycastHit hit))
+        {
+            return false;
+        }
+        if(hit.normal.y < _minGroundDotProduct)
+        {
+            return false;
+        }
+        
+        _groundContactCount = 1;
+        _contactNormal = hit.normal;
+        float speed = _velocity.magnitude;
+        float dot = Vector3.Dot(_velocity, hit.normal);
+        if (dot > 0f) _velocity = (_velocity - hit.normal * dot).normalized * speed;
+        return true;
+    }
+    
+    private void ClearState()
+    {
+        _groundContactCount = 0;
+        _contactNormal = Vector3.zero;
     }
 }
