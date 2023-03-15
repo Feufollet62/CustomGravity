@@ -16,9 +16,9 @@ public class PlayerController : MonoBehaviour
     private Vector3 _velocity, _desiredVelocity;
     
     private float _minGroundDotProduct, _minStairsDotProduct;
-    private Vector3 _contactNormal;
+    private Vector3 _contactNormal, _steepNormal;
     private int _stepsSinceLastGrounded, _stepsSinceLastJump;
-    private int _groundContactCount;
+    private int _groundContactCount, _steepContactCount;
     
     private bool _desiredJump;
     private int _jumpPhase;
@@ -26,6 +26,7 @@ public class PlayerController : MonoBehaviour
     private Rigidbody _rb;
 
     private bool Grounded => _groundContactCount > 0;
+    private bool OnSteep => _steepContactCount > 0;
     
     private void OnValidate()
     {
@@ -82,14 +83,11 @@ public class PlayerController : MonoBehaviour
         _stepsSinceLastJump++;
         
         _velocity = _rb.velocity;
-        if (Grounded || SnapToGround())
+        if (Grounded || SnapToGround() || CheckSteepContacts())
         {
             _stepsSinceLastGrounded = 0;
-            _jumpPhase = 0;
-            if (_groundContactCount > 1)
-            {
-                _contactNormal.Normalize();
-            }
+            if (_stepsSinceLastJump > 1) _jumpPhase = 0;
+            if (_groundContactCount > 1) _contactNormal.Normalize();
         }
         else _contactNormal = Vector3.up;
     }
@@ -106,22 +104,38 @@ public class PlayerController : MonoBehaviour
                 _groundContactCount++;
                 _contactNormal += normal;
             }
+            else if (normal.y > -0.01f)
+            {
+                _steepContactCount += 1;
+                _steepNormal += normal;
+            }
         }
     }
 
     private void Jump()
     {
-        if(Grounded || _jumpPhase < maxAirJumps)
+        Vector3 jumpDirection;
+        if (Grounded) jumpDirection = _contactNormal;
+        else if (OnSteep)
         {
-            _stepsSinceLastJump = 0;
-            _jumpPhase++;
-            
-            float jumpSpeed = Mathf.Sqrt(-2f * Physics.gravity.y * jumpHeight);
-            float alignedSpeed = Vector3.Dot(_velocity, _contactNormal);
-            if (alignedSpeed > 0f) jumpSpeed = Mathf.Max(jumpSpeed - alignedSpeed, 0f);
-
-            _velocity += _contactNormal * jumpSpeed;
+            jumpDirection = _steepNormal;
+            _jumpPhase = 0;
         }
+        else if (maxAirJumps > 0 && _jumpPhase <= maxAirJumps)
+        {
+            if (_jumpPhase == 0) _jumpPhase = 1;
+            jumpDirection = _contactNormal;
+        }
+        else return;
+        
+        _stepsSinceLastJump = 0;
+        _jumpPhase++;
+        
+        float jumpSpeed = Mathf.Sqrt(-2f * Physics.gravity.y * jumpHeight);
+        float alignedSpeed = Vector3.Dot(_velocity, jumpDirection);
+        if (alignedSpeed > 0f) jumpSpeed = Mathf.Max(jumpSpeed - alignedSpeed, 0f);
+
+        _velocity += jumpDirection * jumpSpeed;
     }
     
     private void AdjustVelocity()
@@ -170,9 +184,24 @@ public class PlayerController : MonoBehaviour
         return (stairsMask & (1 << layer)) == 0 ? _minGroundDotProduct : _minStairsDotProduct;
     }
     
+    bool CheckSteepContacts()
+    {
+        if (_steepContactCount > 1)
+        {
+            _steepNormal.Normalize();
+            if (_steepNormal.y >= _minGroundDotProduct)
+            {
+                _groundContactCount = 1;
+                _contactNormal = _steepNormal;
+                return true;
+            }
+        }
+        return false;
+    }
+    
     private void ClearState()
     {
-        _groundContactCount = 0;
+        _groundContactCount = _steepContactCount = 0;
         _contactNormal = Vector3.zero;
     }
 }
