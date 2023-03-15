@@ -4,18 +4,27 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField, Range(0f, 20f)] float maxSpeed = 10f;
     [SerializeField, Range(0f, 50f)] float maxAcceleration = 10f, maxAirAcceleration = 1f;
+    [SerializeField, Range(0f, 90f)] float maxGroundAngle = 40f;
+    
     [SerializeField, Range(0f, 5f)] float jumpHeight = 2f;
     [SerializeField, Range(0, 5)] int maxAirJumps = 0;
     
     private Vector3 _velocity, _desiredVelocity;
+    private float _minGroundDotProduct;
     private bool _desiredJump, _grounded;
     private int _jumpPhase;
     
     private Rigidbody _rb;
 
-    void Awake() 
+    private void OnValidate()
+    {
+        _minGroundDotProduct = Mathf.Cos(maxGroundAngle * Mathf.Deg2Rad);
+    }
+    
+    private void Awake() 
     {
         _rb = GetComponent<Rigidbody>();
+        OnValidate();
     }
     
     private void Update()
@@ -73,7 +82,7 @@ public class PlayerController : MonoBehaviour
         for (int i = 0; i < col.contactCount; i++)
         {
             Vector3 normal = col.GetContact(i).normal;
-            _grounded |= normal.y >= 0.9f;
+            _grounded |= normal.y >= _minGroundDotProduct;
         }
     }
 
