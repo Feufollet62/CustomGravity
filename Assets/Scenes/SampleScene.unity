@@ -472,6 +472,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxSpeed: 7
   maxAcceleration: 44
+  jumpHeight: 1
+  maxAirJumps: 2
 --- !u!54 &585946911
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -486,7 +488,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 112
   m_CollisionDetection: 0
 --- !u!1 &730705835
 GameObject:
