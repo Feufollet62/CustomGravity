@@ -16,6 +16,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField, Range(0, 5)] int maxAirJumps = 0;
     
     private Vector3 _velocity, _desiredVelocity;
+    private Vector3 upAxis;
     
     private float _minGroundDotProduct, _minStairsDotProduct;
     private Vector3 _contactNormal, _steepNormal;
@@ -65,6 +66,8 @@ public class PlayerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        upAxis = -Physics.gravity.normalized;
+        
         UpdateState();
         AdjustVelocity();
         
@@ -101,7 +104,7 @@ public class PlayerController : MonoBehaviour
             if (_stepsSinceLastJump > 1) _jumpPhase = 0;
             if (_groundContactCount > 1) _contactNormal.Normalize();
         }
-        else _contactNormal = Vector3.up;
+        else _contactNormal = upAxis;
     }
     
     private void EvaluateCollision(Collision col)
@@ -143,8 +146,8 @@ public class PlayerController : MonoBehaviour
         _stepsSinceLastJump = 0;
         _jumpPhase++;
         
-        float jumpSpeed = Mathf.Sqrt(-2f * Physics.gravity.y * jumpHeight);
-        jumpDirection = (jumpDirection + Vector3.up).normalized;
+        float jumpSpeed = Mathf.Sqrt(2f * Physics.gravity.magnitude * jumpHeight);
+        jumpDirection = (jumpDirection + upAxis).normalized;
         float alignedSpeed = Vector3.Dot(_velocity, jumpDirection);
         if (alignedSpeed > 0f) jumpSpeed = Mathf.Max(jumpSpeed - alignedSpeed, 0f);
 
@@ -180,7 +183,7 @@ public class PlayerController : MonoBehaviour
         float speed = _velocity.magnitude;
         if (speed > maxSnapSpeed) return false;
         
-        if(!Physics.Raycast(_rb.position, Vector3.down, out RaycastHit hit, maxSnapDistance, snapMask)) return false;
+        if(!Physics.Raycast(_rb.position, -upAxis, out RaycastHit hit, maxSnapDistance, snapMask)) return false;
         
         if(hit.normal.y < GetMinDot(hit.collider.gameObject.layer)) return false;
         
