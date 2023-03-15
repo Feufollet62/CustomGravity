@@ -3,7 +3,7 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     [SerializeField, Range(0f, 20f)] float maxSpeed = 10f;
-    [SerializeField, Range(0f, 50f)] float maxAcceleration = 10f;
+    [SerializeField, Range(0f, 50f)] float maxAcceleration = 10f, maxAirAcceleration = 1f;
     [SerializeField, Range(0f, 5f)] float jumpHeight = 2f;
     [SerializeField, Range(0, 5)] int maxAirJumps = 0;
     
