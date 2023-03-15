@@ -7,22 +7,35 @@ public class OrbitCamera : MonoBehaviour
     [SerializeField, Range(1f, 20f)] private float distance = 5f;
     [SerializeField, Min(0f)] private float focusRadius = 1f;
     [SerializeField, Range(0f, 1f)] float focusCentering = 0.5f;
+    
     [SerializeField, Range(1f, 360f)] float rotationSpeed = 90f;
+    [SerializeField, Range(-89f, 89f)] private float minVerticalAngle = -30f, maxVerticalAngle = 60f;
     
     private Vector2 _orbitAngles = new Vector2(45f, 0f);
     private Vector3 _focusPoint;
     
+    void OnValidate()
+    {
+        if (maxVerticalAngle < minVerticalAngle) maxVerticalAngle = minVerticalAngle;
+    }
+    
     private void Awake ()
     {
         _focusPoint = focus.position;
+        transform.localRotation = Quaternion.Euler(_orbitAngles);
     }
     
     private void LateUpdate()
     {
         UpdateFocusPoint();
-        ManualRotation();
-        
         Quaternion lookRotation = Quaternion.Euler(_orbitAngles);
+        if (ManualRotation())
+        {
+            ConstrainAngles();
+            lookRotation = Quaternion.Euler(_orbitAngles);
+        }
+        else lookRotation = transform.localRotation;
+
         Vector3 lookDirection = transform.forward;
         Vector3 lookPosition = _focusPoint - lookDirection * distance;
         transform.SetPositionAndRotation(lookPosition, lookRotation);
@@ -42,13 +55,24 @@ public class OrbitCamera : MonoBehaviour
         else _focusPoint = targetPoint;
     }
     
-    private void ManualRotation()
+    private bool ManualRotation()
     {
         Vector2 input = new Vector2(Input.GetAxis("Mouse Y"), Input.GetAxis("Mouse X"));
         const float e = 0.001f;
         if (input.x < -e || input.x > e || input.y < -e || input.y > e)
         {
             _orbitAngles += rotationSpeed * Time.unscaledDeltaTime * input;
+            return true;
         }
+
+        return false;
+    }
+    
+    private void ConstrainAngles()
+    {
+        _orbitAngles.x = Mathf.Clamp(_orbitAngles.x, minVerticalAngle, maxVerticalAngle);
+
+        if (_orbitAngles.y < 0f) _orbitAngles.y += 360f;
+        else if (_orbitAngles.y >= 360f) _orbitAngles.y -= 360f;
     }
 }
