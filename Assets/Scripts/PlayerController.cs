@@ -113,13 +113,14 @@ public class PlayerController : MonoBehaviour
         for (int i = 0; i < col.contactCount; i++)
         {
             Vector3 normal = col.GetContact(i).normal;
+            float upDot = Vector3.Dot(upAxis, normal);
             
-            if (normal.y >= minDot)
+            if (upDot >= minDot)
             {
                 _groundContactCount++;
                 _contactNormal += normal;
             }
-            else if (normal.y > -0.01f)
+            else if (upDot > -0.01f)
             {
                 _steepContactCount += 1;
                 _steepNormal += normal;
@@ -185,7 +186,8 @@ public class PlayerController : MonoBehaviour
         
         if(!Physics.Raycast(_rb.position, -upAxis, out RaycastHit hit, maxSnapDistance, snapMask)) return false;
         
-        if(hit.normal.y < GetMinDot(hit.collider.gameObject.layer)) return false;
+        float upDot = Vector3.Dot(upAxis, hit.normal);
+        if(upDot < GetMinDot(hit.collider.gameObject.layer)) return false;
         
         _groundContactCount = 1;
         _contactNormal = hit.normal;
@@ -205,7 +207,8 @@ public class PlayerController : MonoBehaviour
         if (_steepContactCount > 1)
         {
             _steepNormal.Normalize();
-            if (_steepNormal.y >= _minGroundDotProduct)
+            float upDot = Vector3.Dot(upAxis, _steepNormal);
+            if (upDot >= _minGroundDotProduct)
             {
                 _groundContactCount = 1;
                 _contactNormal = _steepNormal;
