@@ -6,6 +6,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField, Range(0f, 50f)] float maxAcceleration = 10f, maxAirAcceleration = 1f;
     [SerializeField, Range(0f, 90f)] float maxGroundAngle = 40f;
     
+    [SerializeField] LayerMask snapMask = -1;
+    [SerializeField, Min(0f)] float maxSnapDistance = 1f;
+    [SerializeField, Range(0f, 100f)] float maxSnapSpeed = 100f;
+    
     [SerializeField, Range(0f, 5f)] float jumpHeight = 2f;
     [SerializeField, Range(0, 5)] int maxAirJumps = 0;
     
@@ -13,7 +17,7 @@ public class PlayerController : MonoBehaviour
     
     private float _minGroundDotProduct;
     private Vector3 _contactNormal;
-    private int _stepsSinceLastGrounded;
+    private int _stepsSinceLastGrounded, _stepsSinceLastJump;
     private int _groundContactCount;
     
     private bool _desiredJump;
@@ -75,6 +79,7 @@ public class PlayerController : MonoBehaviour
     private void UpdateState()
     {
         _stepsSinceLastGrounded++;
+        _stepsSinceLastJump++;
         
         _velocity = _rb.velocity;
         if (Grounded || SnapToGround())
@@ -107,6 +112,7 @@ public class PlayerController : MonoBehaviour
     {
         if(Grounded || _jumpPhase < maxAirJumps)
         {
+            _stepsSinceLastJump = 0;
             _jumpPhase++;
             
             float jumpSpeed = Mathf.Sqrt(-2f * Physics.gravity.y * jumpHeight);
@@ -141,24 +147,20 @@ public class PlayerController : MonoBehaviour
 
     private bool SnapToGround()
     {
-        if(_stepsSinceLastGrounded > 1)
-        {
-            return false;
-        }
-        if(!Physics.Raycast(_rb.position, Vector3.down, out RaycastHit hit))
-        {
-            return false;
-        }
-        if(hit.normal.y < _minGroundDotProduct)
-        {
-            return false;
-        }
+        if(_stepsSinceLastGrounded > 1 || _stepsSinceLastJump <= 2) return false;
+        
+        float speed = _velocity.magnitude;
+        if (speed > maxSnapSpeed) return false;
+        
+        if(!Physics.Raycast(_rb.position, Vector3.down, out RaycastHit hit, maxSnapDistance, snapMask)) return false;
+        
+        if(hit.normal.y < _minGroundDotProduct) return false;
         
         _groundContactCount = 1;
         _contactNormal = hit.normal;
-        float speed = _velocity.magnitude;
         float dot = Vector3.Dot(_velocity, hit.normal);
         if (dot > 0f) _velocity = (_velocity - hit.normal * dot).normalized * speed;
+        
         return true;
     }
     

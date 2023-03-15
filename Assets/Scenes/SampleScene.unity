@@ -965,6 +965,8 @@ MonoBehaviour:
   maxAcceleration: 45
   maxAirAcceleration: 15
   maxGroundAngle: 40
+  maxSnapDistance: 1
+  maxSnapSpeed: 15
   jumpHeight: 1
   maxAirJumps: 2
 --- !u!54 &585946911
